@@ -1,9 +1,9 @@
 # AWS 3-Tier Architecture with Terraform (Free Tier Friendly + Jenkins CI/CD)
 
-This project sets up a **3-tier architecture on AWS** using Terraform — fully optimized for the AWS Free Tier.
+This project sets up a **3-tier architecture on AWS** using Terraform fully optimized for the AWS Free Tier.
 Instead of a NAT Gateway (which costs money), it uses a **NAT Instance**, and there is **no load balancer or auto-scaling**, keeping costs low.
 
-Now with **Jenkins integration**, you can **automate deployment, updates, and destruction** of this infrastructure — no manual Terraform commands required.
+Now with **Jenkins integration**, you can **automate deployment, updates, and destruction** of this infrastructure no manual Terraform commands required.
 
 ---
 
