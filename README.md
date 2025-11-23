@@ -1,108 +1,142 @@
-# AWS 3-Tier Architecture with Terraform (Free Tier Friendly + Jenkins CI/CD)
+# AWS 3-Tier Architecture with Terraform + Jenkins CI/CD (Production-Ready)
 
-This project sets up a **3-tier architecture on AWS** using Terraform fully optimized for the AWS Free Tier.
-Instead of a NAT Gateway (which costs money), it uses a **NAT Instance**, and there is **no load balancer or auto-scaling**, keeping costs low.
+This project deploys a complete **3-tier architecture on AWS** using Terraform and automated CI/CD with Jenkins.  
+It includes a **public frontend**, **private backend**, **private RDS**, multi-AZ networking, and a **remote backend** using S3.
 
-Now with **Jenkins integration**, you can **automate deployment, updates, and destruction** of this infrastructure no manual Terraform commands required.
+The entire infrastructure can be **created or destroyed through Jenkins** with a single toggle (`DESTROY=true/false`).  
+No manual Terraform commands required.
 
 ---
 
-## Services Used
+## Architecture Overview
 
-* **VPC** – Custom VPC with public & private subnets
-* **EC2** – Frontend, Backend, and NAT Instance
-* **RDS** – MySQL database in private subnet
-* **Security Groups** – Controlled access to servers
-* **Key Pair** – SSH access for debugging / management
+This project provisions a real 3-tier stack:
+
+### 🔹 **Network (VPC Layer)**
+- 1× Custom VPC (10.0.0.0/16)
+- 2× Public subnets (for frontend + NAT Gateways)
+- 2× Private subnets (for backend + RDS)
+- 2× NAT Gateways (one in each AZ)
+- Internet Gateway
+- Route tables (public + private per AZ)
+
+### 🔹 **Compute Layer**
+- Frontend EC2 instance (public subnet)
+- Backend EC2 instance (private subnet)
+- SSH restricted to **your IP only**
+
+### 🔹 **Database Layer**
+- RDS MySQL instance (private subnets only)
+- Secure with DB subnet group + SG restrictions
+
+### 🔹 **Security**
+- Security Groups per tier (frontend, backend, DB)
+- No public access to backend or database
+- SSH restricted using a Terraform variable (`ssh_allowed_cidr`)
+
+### 🔹 **Remote State Backend**
+- Terraform state stored in **S3**
+- State locking using **lockfile** (no DynamoDB required)
+- Safe for Jenkins & team use
 
 ---
 
 ## Prerequisites
 
-Before running this project, make sure you have:
+Before using this project, ensure you have:
 
-* **AWS CLI** installed and configured (`aws configure`)
-* **Terraform** installed
-* **Jenkins** installed with AWS credentials configured
-
-Jenkins should have a **pipeline job** pointing to this repo with a `Jenkinsfile` to fully automate deployment.
-
----
-
-## How to Run
-
-You have **two options**: manual Terraform or automated Jenkins deployment.
+- AWS account with permissions for VPC/EC2/RDS/S3
+- **S3 bucket** for Terraform remote state (you must create this manually)
+- Terraform installed (v1.3+)
+- Jenkins installed with:
+  - AWS credentials  
+  - Pipeline job pointing to this repository
 
 ---
 
-### 1. Manual Terraform
+## Repository Structure
 
-1. Clone the repository:
+```
 
-   ```bash
-   git clone https://github.com/AdityaBhairawkar/aws_3tier_terraform
-   cd aws_3tier_terraform/terraform
-   ```
-
-2. Initialize Terraform:
-
-   ```bash
-   terraform init
-   ```
-
-3. Deploy Infrastructure:
-
-   ```bash
-   terraform apply -auto-approve
-   ```
-
-4. Access Application:
-   After deployment, Terraform outputs the **public IP of the frontend EC2**.
-   Copy that IP into your browser to see the application.
-
-5. Destroy Infrastructure (to avoid charges):
-
-   ```bash
-   terraform destroy -auto-approve
-   ```
-
----
-
-### 2. Jenkins CI/CD Pipeline
-
-1. Create a Jenkins pipeline job pointing to this repo.
-2. Make sure **AWS credentials** are added in Jenkins (ID: `aws-access-key` / `aws-secret-key`).
-3. Configure **Boolean Parameter** `DESTROY` in Jenkins (default = false).
-4. Run the pipeline:
-
-   * If `DESTROY = false` → Jenkins automatically runs `terraform init → plan → apply → output`.
-   * If `DESTROY = true` → Jenkins asks for confirmation, then destroys the infrastructure.
-
-You can also trigger this pipeline automatically via a **GitHub webhook** whenever you push changes.
-
----
-
-## Project Structure
-
-```text
 terraform/
+├── backend.tf
 ├── backend_userdata.sh.tpl
 ├── frontend_script.sh.tpl
 ├── ec2.tf
-├── nat_script.sh
 ├── outputs.tf
 ├── provider.tf
 ├── rds.tf
 ├── security.tf
 ├── variable.tf
 └── vpc.tf
+
 ```
 
 ---
 
-## Notes
+## How to Deploy via Jenkins (Recommended)
 
-* **Free-tier optimized**: no NAT Gateway, no Load Balancer.
-* Always destroy infrastructure after testing to avoid AWS charges.
-* You can customize instance types, database name, and other variables in `variable.tf`.
-* Jenkins integration makes this fully automated — less manual work, safer, and reproducible.
+1. Create a Jenkins Pipeline job pointing to this repo.
+2. Add AWS credentials with IDs:
+   - `aws-access-key`
+   - `aws-secret-key`
+3. Run the job with parameter:
+
+```
+
+DESTROY = false
+
+```
+
+### Jenkins will automatically:
+- `terraform init`
+- `terraform plan`
+- `terraform apply`
+- Print frontend public IP for access
+
+---
+
+## How to Destroy Infrastructure (Through Jenkins)
+
+Simply re-run the pipeline with:
+
+```
+
+DESTROY = true
+
+```
+
+Jenkins will ask for confirmation and then execute:
+
+```
+
+terraform destroy -auto-approve
+
+````
+
+Everything — VPC, EC2, NAT Gateways, RDS, subnets — will be deleted safely.
+
+---
+
+## Manual Terraform (Optional)
+
+If you want to deploy manually:
+
+```bash
+git clone https://github.com/AdityaBhairawkar/aws_3tier_terraform
+cd aws_3tier_terraform/terraform
+
+terraform init
+terraform plan
+terraform apply -auto-approve
+````
+
+To destroy:
+
+```bash
+terraform destroy -auto-approve
+```
+
+> Note: You must have the remote backend S3 bucket created before running `terraform init`.
+
+---

@@ -10,16 +10,19 @@ resource "aws_db_subnet_group" "main" {
 
 # RDS Database
 resource "aws_db_instance" "main" {
-  identifier             = "tier3-app-db"
+  identifier             = "${var.project_name}-db"
   engine                 = "mysql"
-  instance_class         = "db.t3.micro"
-  allocated_storage      = 20
+  instance_class         = var.rds_instance_class
+  allocated_storage      = var.rds_allocated_storage
   storage_type           = "gp2"
-  db_name                = "todo_app"
-  username               = "root"
-  password               = "password"
+
+  db_name                = var.rds_db_name
+  username               = var.rds_username
+  password               = var.db_password
+
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.db_sg.id]
+
   skip_final_snapshot    = true
   publicly_accessible    = false
   multi_az               = false
@@ -28,5 +31,4 @@ resource "aws_db_instance" "main" {
   tags = {
     Name = "${var.project_name}-db"
   }
-
 }

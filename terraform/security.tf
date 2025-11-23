@@ -1,9 +1,10 @@
 # Security Group for Frontend
 resource "aws_security_group" "frontend_sg" {
   name        = "${var.project_name}-frontendsg"
-  description = "Allow HTTP, HTTPS & SSH"
+  description = "Allow HTTP, HTTPS & SSH (restricted)"
   vpc_id      = aws_vpc.main.id
 
+  # HTTP
   ingress {
     description = "Allow HTTP"
     from_port   = 80
@@ -12,6 +13,7 @@ resource "aws_security_group" "frontend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # HTTPS
   ingress {
     description = "Allow HTTPS"
     from_port   = 443
@@ -20,12 +22,13 @@ resource "aws_security_group" "frontend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # SSH from YOUR IP only
   ingress {
-    description = "Allow SSH from VPC"
+    description = "Allow SSH from your IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.ssh_allowed_cidr]
   }
 
   egress {
@@ -43,9 +46,10 @@ resource "aws_security_group" "frontend_sg" {
 # Security Group for Backend
 resource "aws_security_group" "backend_sg" {
   name        = "${var.project_name}-backendsg"
-  description = "Allow traffic from frontend and to RDS"
+  description = "Allow traffic from frontend and SSH from public subnets"
   vpc_id      = aws_vpc.main.id
 
+  # Flask API from frontend
   ingress {
     description     = "Flask API from frontend"
     from_port       = 5000
@@ -54,6 +58,7 @@ resource "aws_security_group" "backend_sg" {
     security_groups = [aws_security_group.frontend_sg.id]
   }
 
+  # SSH from Public Subnets
   ingress {
     description = "Allow SSH from Public Subnets"
     from_port   = 22
@@ -99,43 +104,5 @@ resource "aws_security_group" "db_sg" {
 
   tags = {
     Name = "${var.project_name}-dbsg"
-  }
-}
-
-# Security Group for NAT Instance
-resource "aws_security_group" "nat_sg" {
-  name        = "${var.project_name}-natsg"
-  description = "Allow SSH and traffic from private subnets for NAT"
-  vpc_id      = aws_vpc.main.id
-
-  # Allow SSH only from your IP (replace with your public IP)
-  ingress {
-    description = "Allow SSH from my IP"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow all traffic from private subnets (for NAT functionality)
-  ingress {
-    description = "Allow all traffic from private subnets"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = var.private_subnet_cidrs
-  }
-
-  # Allow all outbound traffic (to internet)
-  egress {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project_name}-nat-sg"
   }
 }

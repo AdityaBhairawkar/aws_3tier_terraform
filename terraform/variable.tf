@@ -11,13 +11,13 @@ variable "vpc_cidr" {
 }
 
 variable "ami_id" {
-  description = "ami id"
+  description = "AMI ID for EC2 instances."
   type        = string
   default     = "ami-0360c520857e3138f"
 }
 
 variable "instance_type" {
-  description = "type of instance"
+  description = "EC2 instance type."
   type        = string
   default     = "t2.micro"
 }
@@ -46,17 +46,41 @@ variable "project_name" {
   default     = "tier3-app"
 }
 
+# SH – set this to YOUR PUBLIC IP with /32
+variable "ssh_allowed_cidr" {
+  description = "CIDR allowed to SSH into frontend EC2."
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
+#RDS credentials (simple variable-based approach)
 variable "db_password" {
-  type    = string
-  default = "password"
+  description = "Password for the RDS database."
+  type        = string
+  default     = "password"
 }
 
 variable "rds_username" {
-  type    = string
-  default = "root"
+  description = "Username for the RDS database."
+  type        = string
+  default     = "root"
 }
 
 variable "rds_db_name" {
-  type    = string
-  default = "todo_app"
+  description = "Database name for the RDS instance."
+  type        = string
+  default     = "todo_app"
+}
+
+# Optional: make RDS slightly more configurable
+variable "rds_instance_class" {
+  description = "Instance class for RDS."
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "rds_allocated_storage" {
+  description = "Allocated storage (GB) for RDS."
+  type        = number
+  default     = 20
 }

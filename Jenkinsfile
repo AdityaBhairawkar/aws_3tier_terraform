@@ -9,7 +9,7 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
-        AWS_DEFAULT_REGION     = 'us-east-1'
+        AWS_DEFAULT_REGION    = 'us-east-1'
     }
 
     stages {
@@ -30,7 +30,7 @@ pipeline {
         stage('Initialize Terraform') {
             steps {
                 dir('terraform') {
-                    sh 'terraform init'
+                    sh 'terraform init -input=false'
                 }
             }
         }
@@ -57,7 +57,7 @@ pipeline {
             }
             steps {
                 dir('terraform') {
-                    sh 'terraform plan -out=tfplan'
+                    sh 'terraform plan -input=false -out=tfplan'
                 }
             }
         }
@@ -71,11 +71,11 @@ pipeline {
                     sh '''
                         if [ -f tfplan ]; then
                             echo "Applying existing plan..."
-                            terraform apply -auto-approve tfplan
+                            terraform apply -input=false -auto-approve tfplan
                         else
                             echo "No plan file found. Generating a new one..."
-                            terraform plan -out=tfplan
-                            terraform apply -auto-approve tfplan
+                            terraform plan -input=false -out=tfplan
+                            terraform apply -input=false -auto-approve tfplan
                         fi
                     '''
                 }
@@ -100,7 +100,7 @@ pipeline {
             steps {
                 input message: 'Confirm destruction of all infrastructure?', ok: 'Yes, destroy'
                 dir('terraform') {
-                    sh 'terraform destroy -auto-approve'
+                    sh 'terraform destroy -auto-approve -input=false'
                 }
             }
         }
@@ -116,8 +116,7 @@ pipeline {
         }
 
         always {
-            echo 'Cleaning workspace...'
-            deleteDir()
+            echo 'Pipeline finished.'
         }
     }
 }
