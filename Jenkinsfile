@@ -4,7 +4,6 @@ pipeline {
         booleanParam(name: 'DESTROY', defaultValue: false, description: 'Destroy Infrastructure')
     }
 
-    agent any
 
     environment {
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key')
